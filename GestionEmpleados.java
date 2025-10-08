@@ -1,0 +1,356 @@
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.Iterator;
+
+public class GestionEmpleados {
+
+    private static ArrayList<Empleado> listaEmpleados = new ArrayList<>();
+    private static ArrayList<Departamento> listaDepartamentos = new ArrayList<>();
+    private static Scanner scanner = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        int opcion;
+
+        do {
+            mostrarMenuPrincipal();
+            opcion = leerOpcion();
+
+            switch (opcion) {
+                case 1:
+                    menuGestionEmpleados();
+                    break;
+                case 2:
+                    menuGestionDepartamentos();
+                    break;
+                case 3:
+                    menuReportes();
+                    break;
+                case 4:
+                    System.out.println("Finalizando Programa");
+                    break;
+                default:
+                    System.out.println("Opcion no valida, marque una opcion correcta");
+                    break;
+            }
+        } while (opcion != 4);
+    }
+
+    // Menu principal
+    private static void mostrarMenuPrincipal() {
+        System.out.println("SISTEMA DE GESTIÓN DE RECURSOS HUMANOS ");
+        System.out.println("que desea gestionar el dia de hoy ? ");
+        System.out.println("1. Empleados");
+        System.out.println("2. Departamentos");
+        System.out.println("3. Generar Reportes");
+        System.out.println("4. Salir");
+        System.out.print("Seleccione una opción: ");
+    }
+    // menu de Empleados
+    private static void menuGestionEmpleados() {
+        int opcion;
+        do {
+            System.out.println("\n GESTIÓN DE EMPLEADOS ");
+            System.out.println("1. Crear empleado");
+            System.out.println("2. Actualizar Datos");
+            System.out.println("3. Eliminar empleado");
+            System.out.println("4. Asignar a departamento");
+            System.out.println("5. Mostrar todos los empleados");
+            System.out.println("6. Volver al menú principal");
+            System.out.print("Seleccione una opción: ");
+            opcion = leerOpcion();
+
+            switch (opcion) {
+                case 1:
+                    crearEmpleado();
+                    break;
+                case 2:
+                    actualizarEmpleado();
+                    break;
+                case 3:
+                    eliminarEmpleado();
+                    break;
+                case 4:
+                    asignarEmpleadoADepartamento();
+                    break;
+                case 5:
+                    mostrarTodosLosEmpleados();
+                    break;
+                case 6:
+                    System.out.println("...");
+                    break;
+                default:
+                    System.out.println("Opción invalida, marque una de las opciones.");
+                    break;
+            }
+        } while (opcion != 6);
+    }
+    // menu de Departamentos
+    private static void menuGestionDepartamentos() {
+        int opcion;
+        do {
+            System.out.println("\n--- GESTIÓN DE DEPARTAMENTOS ---");
+            System.out.println("1. Crear nuevo departamento");
+            System.out.println("2. Modificar departamento");
+            System.out.println("3. Eliminar departamento");
+            System.out.println("4. Ver empleados por departamento");
+            System.out.println("5. Volver al menú principal");
+            System.out.print("Seleccione una opción: ");
+            opcion = leerOpcion();
+
+            switch (opcion) {
+                case 1:
+                    crearDepartamento();
+                    break;
+                case 2:
+                    modificarDepartamento();
+                    break;
+                case 3:
+                    eliminarDepartamento();
+                    break;
+                case 4:
+                    verEmpleadosPorDepartamento();
+                    break;
+                case 5:
+                    System.out.println("...");
+                    break;
+                default:
+                    System.out.println("Opción invalida, marque una de las opciones.");
+                    break;
+            }
+        } while (opcion != 5);
+    }
+    // menu de reportes
+    private static void menuReportes() {
+        int opcion;
+        do {
+            System.out.println("\n--- GENERAR REPORTES ---");
+            System.out.println("1. Reporte de desempeño empleados");
+            System.out.println("2. Reporte de desempeño departamentos");
+            System.out.println("3. Volver al menú principal");
+            System.out.print("Seleccione una opción: ");
+            opcion = leerOpcion();
+
+            switch (opcion) {
+                case 1:
+                    generarReporteEmpleado();
+                    break;
+                case 2:
+                    generarReporteDepartamento();
+                    break;
+                case 3:
+                    System.out.println("...");
+                    break;
+                default:
+                    System.out.println("Opción invalida, marque una de las opciones..");
+                    break;
+            }
+        } while (opcion != 3);
+    }
+    
+    // Gestion de Empleados
+    private static void crearEmpleado() {
+        System.out.print("Ingrese nombre del empleado: ");
+        String nombre = scanner.nextLine();
+        System.out.print("Ingrese salario base: ");
+        double salarioBase = Double.parseDouble(scanner.nextLine());
+        System.out.print("Tipo de empleado (1: Permanente, 2: Temporal): ");
+        int tipo = leerOpcion();
+
+        if (tipo == 1) {
+            System.out.print("Ingrese bono anual: ");
+            double bono = Double.parseDouble(scanner.nextLine());
+            EmpleadoPermanente nuevoEmpleado = new EmpleadoPermanente(nombre, salarioBase, bono);
+            listaEmpleados.add(nuevoEmpleado);
+            System.out.println("Empleado permanente creado con ID: " + nuevoEmpleado.getId());
+        } else if (tipo == 2) {
+            System.out.print("Ingrese duración del contrato en meses: ");
+            int duracion = Integer.parseInt(scanner.nextLine());
+            EmpleadoTemporal nuevoEmpleado = new EmpleadoTemporal(nombre, salarioBase, duracion);
+            listaEmpleados.add(nuevoEmpleado);
+            System.out.println("Empleado temporal creado con ID: " + nuevoEmpleado.getId());
+        } else {
+            System.out.println("Tipo de empleado no válido.");
+        }
+    }
+
+    private static void actualizarEmpleado() {
+        System.out.print("Ingrese el ID del empleado a actualizar: ");
+        String id = scanner.nextLine();
+        Empleado empleadoEncontrado = buscarEmpleadoPorId(id);
+        if (empleadoEncontrado != null) {
+            System.out.print("Nuevo nombre (dejar en blanco para no cambiar): ");
+            String nuevoNombre = scanner.nextLine();
+            if (!nuevoNombre.isEmpty()) {
+                empleadoEncontrado.setNombre(nuevoNombre);
+            }
+            System.out.print("Nuevo salario base (dejar 0 para no cambiar): ");
+            double nuevoSalario = Double.parseDouble(scanner.nextLine());
+            if (nuevoSalario > 0) {
+                empleadoEncontrado.setSalarioBase(nuevoSalario);
+            }
+            System.out.println("Empleado actualizado con éxito.");
+        } else {
+            System.out.println("Empleado con ID " + id + " no encontrado.");
+        }
+    }
+
+    private static void eliminarEmpleado() {
+        System.out.print("Ingrese el ID del empleado a eliminar: ");
+        String id = scanner.nextLine();
+        Empleado empleadoEncontrado = buscarEmpleadoPorId(id);
+        if (empleadoEncontrado != null) {
+
+            // Eliminar empleado de departamamento si tiene uno 
+            if (empleadoEncontrado.getDepartamento() != null) {
+                empleadoEncontrado.getDepartamento().eliminarEmpleado(empleadoEncontrado.getId());
+            }
+            listaEmpleados.remove(empleadoEncontrado);
+            System.out.println("Empleado eliminado con éxito.");
+        } else {
+            System.out.println("Empleado con ID " + id + " no encontrado.");
+        }
+    }
+    
+    private static void asignarEmpleadoADepartamento() {
+        System.out.print("Ingrese el ID del empleado a asignar: ");
+        String idEmpleado = scanner.nextLine();
+        Empleado empleado = buscarEmpleadoPorId(idEmpleado);
+
+        if (empleado == null) {
+            System.out.println("Empleado no encontrado.");
+            return;
+        }
+
+        System.out.print("Ingrese el ID del departamento: ");
+        String idDepartamento = scanner.nextLine();
+        Departamento departamento = buscarDepartamentoPorId(idDepartamento);
+
+        if (departamento == null) {
+            System.out.println("Departamento no encontrado.");
+            return;
+        }
+
+        if (empleado.getDepartamento() != null) {
+            empleado.getDepartamento().eliminarEmpleado(empleado.getId());
+        }
+        departamento.agregarEmpleado(empleado);
+    }
+
+    private static void mostrarTodosLosEmpleados() {
+        System.out.println("\n--- LISTA DE TODOS LOS EMPLEADOS ---");
+        if (listaEmpleados.isEmpty()) {
+            System.out.println("No hay empleados registrados.");
+        } else {
+            for (Empleado empleado : listaEmpleados) {
+                empleado.mostrarDetalles();
+            }
+        }
+    }
+
+    // Gestion de Departamentos
+    private static void crearDepartamento() {
+        System.out.print("Ingrese nombre del nuevo departamento: ");
+        String nombre = scanner.nextLine();
+        Departamento nuevoDepartamento = new Departamento(nombre);
+        listaDepartamentos.add(nuevoDepartamento);
+        System.out.println("Departamento creado con ID: " + nuevoDepartamento.getId());
+    }
+
+    private static void modificarDepartamento() {
+        System.out.print("Ingrese el ID del departamento a modificar: ");
+        String id = scanner.nextLine();
+        Departamento departamentoEncontrado = buscarDepartamentoPorId(id);
+        if (departamentoEncontrado != null) {
+            System.out.print("Nuevo nombre (dejar en blanco para no cambiar): ");
+            String nuevoNombre = scanner.nextLine();
+            if (!nuevoNombre.isEmpty()) {
+                departamentoEncontrado.setNombre(nuevoNombre);
+                System.out.println("Departamento actualizado con éxito.");
+            }
+        } else {
+            System.out.println("Departamento con ID " + id + " no encontrado.");
+        }
+    }
+    
+    private static void eliminarDepartamento() {
+        System.out.print("Ingrese el ID del departamento a eliminar: ");
+        String id = scanner.nextLine();
+        Departamento departamentoEncontrado = buscarDepartamentoPorId(id);
+        if (departamentoEncontrado != null) {
+
+            // Eliminar a todos los empleados de ese departamento
+            for (Empleado empleado : departamentoEncontrado.getEmpleados()) {
+                empleado.asignarDepartamento(null);
+            }
+            listaDepartamentos.remove(departamentoEncontrado);
+            System.out.println("Departamento y sus empleados (sin departamento) eliminados con éxito.");
+        } else {
+            System.out.println("Departamento con ID " + id + " no encontrado.");
+        }
+    }
+
+    private static void verEmpleadosPorDepartamento() {
+        System.out.print("Ingrese el ID del departamento para ver sus empleados: ");
+        String id = scanner.nextLine();
+        Departamento departamento = buscarDepartamentoPorId(id);
+        if (departamento != null) {
+            departamento.getEmpleados();
+        } else {
+            System.out.println("Departamento no encontrado.");
+        }
+    }
+    
+    // Gestion de Reportes
+    private static void generarReporteEmpleado() {
+        System.out.print("Ingrese el ID del empleado para generar el reporte: ");
+        String id = scanner.nextLine();
+        Empleado empleado = buscarEmpleadoPorId(id);
+        if (empleado != null) {
+            System.out.println("\n--- REPORTE DE DESEMPEÑO por EMPLEADO ---");
+            System.out.println("Nombre: " + empleado.getNombre());
+            System.out.println("Salario Final: $" + String.format("%.2f", empleado.calcularSalarioFinal()));
+            System.out.println("Departamento: " + (empleado.getDepartamento() != null ? empleado.getDepartamento().getNombre() : "N/A"));
+        } else {
+            System.out.println("Empleado no encontrado.");
+        }
+    }
+    
+    private static void generarReporteDepartamento() {
+        System.out.print("Ingrese el ID del departamento para generar el reporte: ");
+        String id = scanner.nextLine();
+        Departamento departamento = buscarDepartamentoPorId(id);
+        if (departamento != null) {
+            departamento.generarReporteDesempeño();
+        } else {
+            System.out.println("Departamento no encontrado.");
+        }
+    }
+    
+    // --- Métodos pára buscar Empleado o Departamentos ---
+
+    private static Empleado buscarEmpleadoPorId(String id) {
+        for (Empleado empleado : listaEmpleados) {
+            if (empleado.getId().equals(id)) {
+                return empleado;
+            }
+        }
+        return null;
+    }
+
+    private static Departamento buscarDepartamentoPorId(String id) {
+        for (Departamento departamento : listaDepartamentos) {
+            if (departamento.getId().equals(id)) {
+                return departamento;
+            }
+        }
+        return null;
+    }
+
+    private static int leerOpcion() {
+        try {
+            return Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            return -1; // Opción inválida
+        }
+    }
+}

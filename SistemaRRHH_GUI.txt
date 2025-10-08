@@ -1,0 +1,404 @@
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+public class SistemaRRHH_GUI extends JFrame {
+
+    private JTextArea displayArea;
+    
+    // Metodo Constructor 
+    public SistemaRRHH_GUI() {
+        // Configuración de la Ventana Flotante 
+        setTitle("Sistema de Gestión de RRHH - HR Pro");
+        setSize(800, 700);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null); // Centrada
+        setLayout(new BorderLayout(10, 10)); 
+        
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) { /* uso de Lf por si ocurre algun fallo */ }
+
+        // inicio y agregación de paneles
+        add(createHeaderPanel(), BorderLayout.NORTH);
+        add(createControlPanel(), BorderLayout.WEST);
+        add(createDisplayPanel(), BorderLayout.CENTER);
+        
+        // Simulacion de carga inicial
+        loadInitialData();
+
+        setVisible(true);
+    }
+    // Utiliza Reflection para obtener la lista privada estática de la clase Empleados
+    private ArrayList<Empleado> getListaEmpleados() throws Exception {
+        Field field = GestionEmpleados.class.getDeclaredField("listaEmpleados");
+        field.setAccessible(true);
+        return (ArrayList<Empleado>) field.get(null);
+    }
+
+    // Utiliza Reflection para obtener la lista privada estática de la clase Departamentos
+    private ArrayList<Departamento> getListaDepartamentos() throws Exception {
+        Field field = GestionEmpleados.class.getDeclaredField("listaDepartamentos");
+        field.setAccessible(true);
+        return (ArrayList<Departamento>) field.get(null);
+    }
+
+    private void log(String message) {
+        SwingUtilities.invokeLater(() -> displayArea.append(message + "\n"));
+    }
+
+    // --- Diseño de Paneles ---
+  
+    private JPanel createHeaderPanel() {
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 15));
+        header.setBackground(new Color(25, 118, 210)); // Azul corporativo
+        
+        JLabel title = new JLabel("Sistema de Administración de Recursos Humanos");
+        title.setFont(new Font("Arial", Font.BOLD, 26));
+        title.setForeground(Color.WHITE);
+        
+        header.add(title);
+        return header;
+    }
+
+    private JPanel createControlPanel() {
+        JPanel controlPanel = new JPanel();
+        controlPanel.setLayout(new BoxLayout(controlPanel, BoxLayout.Y_AXIS));
+        controlPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        controlPanel.setPreferredSize(new Dimension(280, 0)); 
+        controlPanel.setBackground(new Color(240, 240, 240));
+
+        // --- Gestión de Empleados ---
+        controlPanel.add(createSectionLabel(" GESTIÓN DE EMPLEADOS"));
+        controlPanel.add(createButton(" Añadir Empleado", e -> showAddEmployeeDialog()));
+        controlPanel.add(createButton(" Eliminar Empleado (ID)", e -> showDeleteDialog("Empleado")));
+        controlPanel.add(createButton(" Modificar Salario", e -> showModifyEmployeeDialog()));
+        
+        controlPanel.add(Box.createVerticalStrut(20));
+
+        // --- Gestión de Departamentos ---
+        controlPanel.add(createSectionLabel(" GESTIÓN DE DEPARTAMENTOS"));
+        controlPanel.add(createButton(" Añadir Departamento", e -> showAddDepartmentDialog()));
+        controlPanel.add(createButton(" Eliminar Departamento (ID)", e -> showDeleteDialog("Departamento")));
+        
+        controlPanel.add(Box.createVerticalStrut(20));
+
+        // --- Reportes ---
+        controlPanel.add(createSectionLabel("REPORTES Y NÓMINA"));
+        controlPanel.add(createButton(" Reporte Completo", e -> displayAllEntities()));
+        controlPanel.add(createButton(" Calcular Nómina Total", e -> displayTotalPayroll()));
+        
+        controlPanel.add(Box.createVerticalGlue()); // Empuja los elementos hacia arriba
+        
+        return controlPanel;
+    }
+    
+    private JPanel createDisplayPanel() {
+        JPanel displayPanel = new JPanel(new BorderLayout());
+        displayPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(Color.GRAY, 1), "Área de Mensajes y Reportes"));
+
+        displayArea = new JTextArea("¡Bienvenido! al sistema de Gestion de RRHH , utilice el panel para interactuar o realizar Cambios.");
+        displayArea.setEditable(false);
+        displayArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        displayArea.setBackground(new Color(250, 250, 250));
+        
+        displayPanel.add(new JScrollPane(displayArea), BorderLayout.CENTER);
+        return displayPanel;
+    }
+
+    private JLabel createSectionLabel(String text) {
+        JLabel label = new JLabel("<html><b>" + text + "</b></html>");
+        label.setFont(new Font("Arial", Font.PLAIN, 14));
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        label.setBorder(new EmptyBorder(15, 0, 5, 0));
+        return label;
+    }
+
+    private JButton createButton(String text, java.awt.event.ActionListener listener) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Arial", Font.PLAIN, 14));
+        button.setAlignmentX(Component.LEFT_ALIGNMENT);
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40)); 
+        button.addActionListener(listener);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
+    }
+
+    // ----------------------------------------------------------------------
+    // --- Lógica de Interacción (Basada en las clases existentes) ---
+    // ----------------------------------------------------------------------
+    
+    private void loadInitialData() {
+        try {
+            ArrayList<Departamento> listaDepartamentos = getListaDepartamentos();
+            ArrayList<Empleado> listaEmpleados = getListaEmpleados();
+
+            // 1. Crear Departamentos
+            Departamento dptoIT = new Departamento("Tecnología");
+            Departamento dptoVentas = new Departamento("Ventas");
+            listaDepartamentos.add(dptoIT);
+            listaDepartamentos.add(dptoVentas);
+
+            // 2. Crear Empleados
+            EmpleadoPermanente ep = new EmpleadoPermanente("Laura Gómez", 75000.00, 15000.00);
+            EmpleadoTemporal et = new EmpleadoTemporal("Felipe Bernal", 40000.00, 6);
+            
+            listaEmpleados.add(ep);
+            listaEmpleados.add(et);
+            
+            // 3. Asignar Departamentos (usando el método existente de Departamento)
+            dptoIT.agregarEmpleado(ep);
+            dptoVentas.agregarEmpleado(et);
+
+            log("[Sistema] Datos de ejemplo cargados: " + listaDepartamentos.size() + " Dptos, " + listaEmpleados.size() + " Empleados.");
+        } catch (Exception e) {
+            log("[ERROR CRÍTICO] No se pudo acceder a las listas estáticas de GestionEmpleados: " + e.getMessage());
+        }
+    }
+
+    private void showAddEmployeeDialog() {
+        try {
+            ArrayList<Departamento> dptos = getListaDepartamentos();
+            if (dptos.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Debe haber al menos un departamento antes de añadir empleados.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // 1. Seleccionar tipo de empleado y departamento
+            String[] tipos = {"Permanente", "Temporal"};
+            String tipoSeleccionado = (String) JOptionPane.showInputDialog(this, "¿Qué tipo de empleado desea crear?", "Nuevo Empleado", JOptionPane.QUESTION_MESSAGE, null, tipos, tipos[0]);
+            
+            if (tipoSeleccionado == null) return;
+            
+            JComboBox<Departamento> dptoSelector = new JComboBox<>(dptos.toArray(new Departamento[0]));
+            String dptoId = (String) JOptionPane.showInputDialog(this, "¿A qué departamento pertenece?", "Departamento", JOptionPane.QUESTION_MESSAGE, null, dptos.stream().map(Departamento::getNombre).toArray(), dptos.get(0).getNombre());
+
+            // 2. Recolectar datos básicos
+            String nombre = JOptionPane.showInputDialog(this, "Nombre del empleado:");
+            if (nombre == null || nombre.trim().isEmpty()) return;
+
+            String salarioStr = JOptionPane.showInputDialog(this, "Salario Base (ej: 50000.00):");
+            double salarioBase;
+            try {
+                salarioBase = Double.parseDouble(salarioStr);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Salario base inválido.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            Empleado nuevoEmpleado = null;
+            String mensajeDetalle = "";
+
+            // 3. Crear el objeto Empleado
+            if (tipoSeleccionado.equals("Permanente")) {
+                String bonoStr = JOptionPane.showInputDialog(this, "Bono Anual (ej: 10000.00):");
+                try {
+                    double bono = Double.parseDouble(bonoStr);
+                    nuevoEmpleado = new EmpleadoPermanente(nombre, salarioBase, bono);
+                    mensajeDetalle = "Bono Anual: $" + bono;
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(this, "Bono inválido.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } else if (tipoSeleccionado.equals("Temporal")) {
+                String duracionStr = JOptionPane.showInputDialog(this, "Duración del Contrato (Meses):");
+                try {
+                    int duracion = Integer.parseInt(duracionStr);
+                    nuevoEmpleado = new EmpleadoTemporal(nombre, salarioBase, duracion);
+                    mensajeDetalle = "Duración: " + duracion + " meses";
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(this, "Duración inválida.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
+            
+            if (nuevoEmpleado != null) {
+                // 4. Registrar en la lista estática y asignar departamento
+                getListaEmpleados().add(nuevoEmpleado);
+                
+                // Buscar el departamento para asignación bidireccional
+                Departamento dptoAsignar = dptos.stream()
+                    .filter(d -> d.getNombre().equals(dptoId))
+                    .findFirst().orElse(null);
+                
+                if (dptoAsignar != null) {
+                    dptoAsignar.agregarEmpleado(nuevoEmpleado); // Usa el método existente
+                }
+
+                JOptionPane.showMessageDialog(this, "Empleado añadido con éxito:\n" +
+                                                    "ID: " + nuevoEmpleado.getId() + "\n" +
+                                                    "Tipo: " + tipoSeleccionado + "\n" +
+                                                    "Dpto: " + dptoId + "\n" +
+                                                    mensajeDetalle,
+                                                    "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                log("[Éxito] Empleado " + nombre + " (" + nuevoEmpleado.getId() + ") creado y asignado a " + dptoId + ".");
+            }
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al añadir empleado: " + e.getMessage(), "Error de Sistema", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void showAddDepartmentDialog() {
+        String name = JOptionPane.showInputDialog(this, "Ingrese el nombre del nuevo departamento:");
+        if (name != null && !name.trim().isEmpty()) {
+            try {
+                Departamento d = new Departamento(name);
+                getListaDepartamentos().add(d);
+                log("[Éxito] Departamento añadido: " + d.getNombre() + " (ID: " + d.getId() + ")");
+            } catch (Exception e) {
+                 JOptionPane.showMessageDialog(this, "Error al añadir departamento: " + e.getMessage(), "Error de Sistema", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    private void showDeleteDialog(String entityType) {
+        String id = JOptionPane.showInputDialog(this, "Ingrese el ID de 8 caracteres del " + entityType + " a eliminar:");
+        if (id == null || id.trim().isEmpty()) return;
+        
+        try {
+            if (entityType.equals("Empleado")) {
+                ArrayList<Empleado> empleados = getListaEmpleados();
+                Empleado empleado = empleados.stream().filter(e -> e.getId().equals(id)).findFirst().orElse(null);
+
+                if (empleado != null) {
+                    // Desasignar al departamento ya existente
+                    if (empleado.getDepartamento() != null) {
+                        empleado.getDepartamento().eliminarEmpleado(id);
+                    }
+                    // Eliminar de la lista principal
+                    empleados.remove(empleado);
+                    log("[Éxito] Empleado " + empleado.getNombre() + " (" + id + ") eliminado correctamente.");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Empleado con ID " + id + " no encontrado.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else if (entityType.equals("Departamento")) {
+                ArrayList<Departamento> dptos = getListaDepartamentos();
+                Departamento dpto = dptos.stream().filter(d -> d.getId().equals(id)).findFirst().orElse(null);
+
+                if (dpto != null) {
+                    
+                    dpto.getEmpleados().iterator().forEachRemaining(e -> e.asignarDepartamento(null)); 
+                    dpto.getEmpleados().clear(); // limpiar la lista de Departamentos
+                    
+                   
+                    dptos.remove(dpto);
+                    log("[Éxito] Departamento " + dpto.getNombre() + " (" + id + ") eliminado. Empleados desasignados.");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Departamento con ID " + id + " no encontrado.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al eliminar: " + e.getMessage(), "Error de Sistema", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void showModifyEmployeeDialog() {
+        String id = JOptionPane.showInputDialog(this, "Ingrese el ID de 8 caracteres del Empleado para modificar su Salario Base:");
+        if (id == null || id.trim().isEmpty()) return;
+        
+        try {
+            ArrayList<Empleado> empleados = getListaEmpleados();
+            Empleado empleado = empleados.stream().filter(e -> e.getId().equals(id)).findFirst().orElse(null);
+            
+            if (empleado == null) {
+                JOptionPane.showMessageDialog(this, "Empleado con ID " + id + " no encontrado.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            String nuevoSalarioStr = JOptionPane.showInputDialog(this, "Salario Base Actual: $" + empleado.getSalarioBase() + 
+                                                                    "\nIngrese el nuevo Salario Base:");
+            if (nuevoSalarioStr == null) return;
+            
+            try {
+                double nuevoSalario = Double.parseDouble(nuevoSalarioStr);
+                double salarioAnterior = empleado.getSalarioBase();
+                
+                empleado.setSalarioBase(nuevoSalario); // herencia del setter existente
+                
+                log(String.format("[Modificación] Empleado %s: Salario Base cambiado de $%.2f a $%.2f.", 
+                                  empleado.getNombre(), salarioAnterior, nuevoSalario));
+                
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Salario inválido.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+            
+        } catch (Exception e) {
+             JOptionPane.showMessageDialog(this, "Error al modificar: " + e.getMessage(), "Error de Sistema", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void displayAllEntities() {
+        try {
+            ArrayList<Departamento> listaDepartamentos = getListaDepartamentos();
+            ArrayList<Empleado> listaEmpleados = getListaEmpleados();
+            
+            StringBuilder sb = new StringBuilder();
+            sb.append("--- REPORTE COMPLETO DE RRHH ---\n\n");
+            
+            sb.append("*** DEPARTAMENTOS REGISTRADOS (Total: ").append(listaDepartamentos.size()).append(") ***\n");
+            if (listaDepartamentos.isEmpty()) {
+                 sb.append("   [No hay departamentos registrados]\n");
+            } else {
+                 for (Departamento d : listaDepartamentos) {
+                    sb.append(String.format("   [Dpto. ID: %s] %s | Empleados: %d | Nómina Total: $%.2f\n", 
+                                            d.getId(), d.getNombre(), d.getEmpleados().size(), d.calcularNominaTotal()));
+                }
+            }
+
+            sb.append("\n*** EMPLEADOS REGISTRADOS (Total: ").append(listaEmpleados.size()).append(") ***\n");
+            if (listaEmpleados.isEmpty()) {
+                sb.append("   [No hay empleados registrados]\n");
+            } else {
+                for (Empleado e : listaEmpleados) {
+                     String tipo = (e instanceof EmpleadoPermanente) ? "Permanente (Bono)" : "Temporal (Duración)";
+                     String dpto = (e.getDepartamento() != null) ? e.getDepartamento().getNombre() : "SIN ASIGNAR";
+                     sb.append(String.format("   [Emp. ID: %s] %s | Tipo: %s | Salario Final: $%.2f | Dpto: %s\n", 
+                                             e.getId(), e.getNombre(), tipo, e.calcularSalarioFinal(), dpto));
+                }
+            }
+            
+            displayArea.setText(sb.toString());
+
+        } catch (Exception e) {
+             displayArea.setText("[ERROR] No se pudieron obtener los datos para el reporte: " + e.getMessage());
+        }
+    }
+
+    private void displayTotalPayroll() {
+        try {
+            ArrayList<Departamento> listaDepartamentos = getListaDepartamentos();
+            
+            double totalNomina = listaDepartamentos.stream()
+                                    .mapToDouble(Departamento::calcularNominaTotal)
+                                    .sum();
+            
+            JOptionPane.showMessageDialog(this, 
+                String.format("El cálculo de la Nómina Total de la Empresa es:\n $%.2f", totalNomina),
+                "💰 Reporte de Nómina Total",
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            log(String.format("[Reporte] Nómina Total de la Empresa: $%.2f", totalNomina));
+            
+        } catch (Exception e) {
+             JOptionPane.showMessageDialog(this, 
+                "Error al calcular la nómina. Verifique el log.",
+                "Error de Cálculo",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    // ----------------------------------------------------------------------
+    // --- Punto de Entrada ---
+    // ----------------------------------------------------------------------
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(SistemaRRHH_GUI::new);
+    }
+}
