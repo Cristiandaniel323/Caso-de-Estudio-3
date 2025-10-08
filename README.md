@@ -3,9 +3,7 @@
 
 ---
 
-Documentación del proceso (texto para entregar como informe)
-
-Puedes incluir esto en un `docs/InformeActividad3.md` o directamente en el `README`:
+Documentación del proceso
 
 **Informe de Integración y Validación — Actividad 3**
 
